@@ -34,7 +34,7 @@
             this.jyCheckBox = new System.Windows.Forms.CheckBox();
             this.scCheckBox = new System.Windows.Forms.CheckBox();
             this.dmCheckBox = new System.Windows.Forms.CheckBox();
-            this.searchAddEditButton = new System.Windows.Forms.Button();
+            this.actionButton = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // mapControl
@@ -74,6 +74,7 @@
             this.searchTextBox.Name = "searchTextBox";
             this.searchTextBox.Size = new System.Drawing.Size(414, 20);
             this.searchTextBox.TabIndex = 1;
+            this.searchTextBox.TextChanged += new System.EventHandler(this.searchTextBox_TextChanged);
             // 
             // ccCheckBox
             // 
@@ -119,22 +120,23 @@
             this.dmCheckBox.Text = "DM";
             this.dmCheckBox.UseVisualStyleBackColor = true;
             // 
-            // searchAddEditButton
+            // actionButton
             // 
-            this.searchAddEditButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.searchAddEditButton.Location = new System.Drawing.Point(617, 477);
-            this.searchAddEditButton.Name = "searchAddEditButton";
-            this.searchAddEditButton.Size = new System.Drawing.Size(75, 23);
-            this.searchAddEditButton.TabIndex = 6;
-            this.searchAddEditButton.Text = "Search";
-            this.searchAddEditButton.UseVisualStyleBackColor = true;
+            this.actionButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.actionButton.Location = new System.Drawing.Point(617, 477);
+            this.actionButton.Name = "actionButton";
+            this.actionButton.Size = new System.Drawing.Size(75, 23);
+            this.actionButton.TabIndex = 6;
+            this.actionButton.Text = "Search";
+            this.actionButton.UseVisualStyleBackColor = true;
+            this.actionButton.Click += new System.EventHandler(this.actionButton_Click);
             // 
             // CoreMaps
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(704, 512);
-            this.Controls.Add(this.searchAddEditButton);
+            this.Controls.Add(this.actionButton);
             this.Controls.Add(this.dmCheckBox);
             this.Controls.Add(this.scCheckBox);
             this.Controls.Add(this.jyCheckBox);
@@ -158,7 +160,7 @@
         private System.Windows.Forms.CheckBox jyCheckBox;
         private System.Windows.Forms.CheckBox scCheckBox;
         private System.Windows.Forms.CheckBox dmCheckBox;
-        private System.Windows.Forms.Button searchAddEditButton;
+        private System.Windows.Forms.Button actionButton;
     }
 }
 

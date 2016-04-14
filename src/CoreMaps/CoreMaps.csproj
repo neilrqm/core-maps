@@ -50,6 +50,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ActivityLocation.cs" />
     <Compile Include="CoreMaps.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -81,6 +82,21 @@
       <DependentUpon>Settings.settings</DependentUpon>
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="icon_dot.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="icon_cc.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="icon_dm.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="icon_jy.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="icon_sc.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
