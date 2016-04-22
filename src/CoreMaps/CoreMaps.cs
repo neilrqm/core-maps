@@ -18,6 +18,12 @@ namespace CoreMaps
             Off,
         }
 
+        private enum MarkerState
+        {
+            Selected,
+            NotSelected,
+        }
+
         // default provider is OpenStreetMap
         private GMap.NET.MapProviders.GMapProvider provider = GMap.NET.MapProviders.OpenStreetMapProvider.Instance;
         private GMap.NET.WindowsForms.GMapOverlay overlay;
@@ -28,19 +34,19 @@ namespace CoreMaps
         public CoreMaps()
         {
             InitializeComponent();
-            SetButtonState(ButtonState.Search); // first set action button to search, because we want it in that mode
-            SetButtonState(ButtonState.Off);    // then set action button to off, to disable it since the text box starts blank
+            SetUiState(ButtonState.Search); // first set action button to search, because we want it in that mode
+            SetUiState(ButtonState.Off);    // then set action button to off, to disable it since the text box starts blank
             locations = new List<ActivityLocation>();
 
             // test code
             searchTextBox.Text = "631 Jolly Pl.";
         }
 
-        private void SetButtonState(ButtonState state)
+        private void SetUiState(ButtonState state)
         {
             if (InvokeRequired)
             {
-                Invoke(new Action<ButtonState>(SetButtonState), state);
+                Invoke(new Action<ButtonState>(SetUiState), state);
                 return;
             }
             buttonState = state;
@@ -48,14 +54,26 @@ namespace CoreMaps
             {
                 case ButtonState.Search:
                     actionButton.Text = "Search";
+                    ccCheckBox.Enabled = true;
+                    jyCheckBox.Enabled = true;
+                    dmCheckBox.Enabled = true;
+                    scCheckBox.Enabled = true;
                     actionButton.Enabled = true;
                     break;
                 case ButtonState.Delete:
                     actionButton.Text = "Delete";
+                    ccCheckBox.Enabled = true;
+                    jyCheckBox.Enabled = true;
+                    dmCheckBox.Enabled = true;
+                    scCheckBox.Enabled = true;
                     actionButton.Enabled = true;
                     break;
                 case ButtonState.Off:
                     actionButton.Enabled = false;
+                    ccCheckBox.Enabled = false;
+                    jyCheckBox.Enabled = false;
+                    dmCheckBox.Enabled = false;
+                    scCheckBox.Enabled = false;
                     break;
             }
         }
@@ -71,26 +89,7 @@ namespace CoreMaps
             mapControl.Overlays.Add(overlay);
         }
 
-        private Bitmap ChangeIntensity(Bitmap original, int change)
-        {
-            Bitmap newImage = new Bitmap(original);
-            for (int i = 0; i < newImage.Width; i++)
-            {
-                for (int j = 0; j < newImage.Height; j++)
-                {
-                    Color oldColor = newImage.GetPixel(i, j);
-                    int a = oldColor.A;
-                    int r = oldColor.R + change < 0 ? 0 : oldColor.R + change > 255 ? 255 : oldColor.R + change;
-                    int g = oldColor.G + change < 0 ? 0 : oldColor.G + change > 255 ? 255 : oldColor.G + change;
-                    int b = oldColor.B + change < 0 ? 0 : oldColor.B + change > 255 ? 255 : oldColor.B + change;
-                    Color newColor = Color.FromArgb(a, r, g, b);
-                    newImage.SetPixel(i, j, newColor);
-                }
-            }
-            return newImage;
-        }
-
-        private Bitmap MakeMarkerImage(ActivityLocation location)
+        private Bitmap MakeMarkerImage(ActivityLocation location, MarkerState markerState)
         {
             Bitmap markerImage = new Bitmap(Properties.Resources.icon_dot);
             using (Graphics g = Graphics.FromImage(markerImage))
@@ -106,7 +105,59 @@ namespace CoreMaps
                     g.DrawImage(Properties.Resources.icon_sc, new Rectangle(new Point(), Properties.Resources.icon_cc.Size), new Rectangle(new Point(), Properties.Resources.icon_cc.Size), GraphicsUnit.Pixel);
                 g.Save();
             }
+            if (markerState == MarkerState.NotSelected)
+            {
+                const int change = -30;     // change this value to make not-selected image darker/lighter
+                Bitmap darkerImage = new Bitmap(markerImage);
+                for (int i = 0; i < darkerImage.Width; i++)
+                {
+                    for (int j = 0; j < darkerImage.Height; j++)
+                    {
+                        Color oldColor = darkerImage.GetPixel(i, j);
+                        int a = oldColor.A;
+                        int r = oldColor.R + change < 0 ? 0 : oldColor.R + change > 255 ? 255 : oldColor.R + change;
+                        int g = oldColor.G + change < 0 ? 0 : oldColor.G + change > 255 ? 255 : oldColor.G + change;
+                        int b = oldColor.B + change < 0 ? 0 : oldColor.B + change > 255 ? 255 : oldColor.B + change;
+                        Color newColor = Color.FromArgb(a, r, g, b);
+                        darkerImage.SetPixel(i, j, newColor);
+                    }
+                }
+                return darkerImage;
+            }
             return markerImage;
+        }
+
+        private void SelectLocation(ActivityLocation location)
+        {
+            // unselect currently selected location
+            if (selectedLocation != null)
+            {
+                overlay.Markers.Remove(selectedLocation.Marker);
+                selectedLocation.Marker = new Marker(selectedLocation.Marker.Position, MakeMarkerImage(selectedLocation, MarkerState.NotSelected));
+                overlay.Markers.Add(selectedLocation.Marker);
+                selectedLocation = null;
+            }
+            // select new location
+            if (location != null)
+            {
+                selectedLocation = location;
+                searchTextBox.Text = selectedLocation.SearchString;
+                ccCheckBox.Checked = selectedLocation.ChildrensClass;
+                jyCheckBox.Checked = selectedLocation.JuniorYouthGroup;
+                dmCheckBox.Checked = selectedLocation.DevotionalMeeting;
+                scCheckBox.Checked = selectedLocation.StudyCircle;
+                if (selectedLocation.Marker != null)
+                {
+                    overlay.Markers.Remove(selectedLocation.Marker);
+                }
+                Marker newMarker = new Marker(mapControl.Position, MakeMarkerImage(selectedLocation, MarkerState.Selected));
+                selectedLocation.Marker = newMarker;
+                overlay.Markers.Add(newMarker);
+                if (!locations.Contains(selectedLocation))
+                {
+                    locations.Add(selectedLocation);
+                }
+            }
         }
 
         private void CoreMaps_Load(object sender, EventArgs e)
@@ -114,12 +165,27 @@ namespace CoreMaps
             InitializeMapControl();
         }
 
+        private void mapControl_Click(object sender, EventArgs e)
+        {
+            SelectLocation(null);
+            if (buttonState == ButtonState.Delete)
+            {
+                SetUiState(ButtonState.Search);
+                searchTextBox.Text = "";
+                ccCheckBox.Checked = false;
+                jyCheckBox.Checked = false;
+                dmCheckBox.Checked = false;
+                scCheckBox.Checked = false;
+            }
+        }
+
         private void mapControl_MarkerClicked(GMap.NET.WindowsForms.GMapMarker marker, MouseEventArgs args)
         {
             ActivityLocation location = null;
             foreach (ActivityLocation l in locations)
             {
-                if (l.Marker == marker)
+                GMap.NET.SizeLatLng distance = (l.Marker.Position - marker.Position);
+                if (Math.Sqrt(distance.HeightLat * distance.HeightLat + distance.WidthLng * distance.WidthLng) < 0.0001)
                 {
                     location = l;
                     break;
@@ -129,24 +195,22 @@ namespace CoreMaps
             {
                 throw new Exception("User clicked a marker with no location associated with it.");
             }
-            overlay.Markers.Remove(location.Marker);
-            location.Marker = new Marker(location.Marker.Position, MakeMarkerImage(location));
-            overlay.Markers.Add(location.Marker);
+            SelectLocation(location);
         }
 
         private void searchTextBox_TextChanged(object sender, EventArgs e)
         {
             if (string.IsNullOrEmpty(searchTextBox.Text))
             {
-                SetButtonState(ButtonState.Off);
+                SetUiState(ButtonState.Off);
             }
-            else if (selectedLocation != null)
+            else if (selectedLocation != null && selectedLocation.SearchString == searchTextBox.Text)
             {
-                SetButtonState(ButtonState.Delete);
+                SetUiState(ButtonState.Delete);
             }
             else
             {
-                SetButtonState(ButtonState.Search);
+                SetUiState(ButtonState.Search);
             }
         }
 
@@ -159,7 +223,9 @@ namespace CoreMaps
                     {
                         selectedLocation.Marker.Dispose();
                         overlay.Markers.Remove(selectedLocation.Marker);
-                        SetButtonState(ButtonState.Search);
+                        locations.Remove(selectedLocation);
+                        selectedLocation = null;
+                        SetUiState(ButtonState.Search);
                     }
                     else
                     {
@@ -167,20 +233,55 @@ namespace CoreMaps
                     }
                     break;
                 case ButtonState.Search:
-                    //dot.MakeTransparent(Color.White);
-                    Bitmap markerImage = ChangeIntensity(MakeMarkerImage(new ActivityLocation()), -30);
                     mapControl.SetPositionByKeywords(searchTextBox.Text);
-                    Marker newMarker = new Marker(mapControl.Position, markerImage);
-                    overlay.Markers.Add(newMarker);
-                    SetButtonState(ButtonState.Delete);
-                    selectedLocation = new ActivityLocation();
-                    selectedLocation.SearchString = searchTextBox.Text;
-                    selectedLocation.Marker = newMarker;
-                    locations.Add(selectedLocation);
+                    SetUiState(ButtonState.Delete);
+                    foreach (ActivityLocation l in locations)
+                    {
+                        if (l.Marker.Position == mapControl.Position)
+                        {
+                            SelectLocation(l);
+                            return;
+                        }
+                    }
+                    
+                    SetUiState(ButtonState.Delete);
+                    ActivityLocation location = new ActivityLocation();
+                    location.SearchString = searchTextBox.Text;
+                    location.ChildrensClass = ccCheckBox.Checked;
+                    location.JuniorYouthGroup = jyCheckBox.Checked;
+                    location.DevotionalMeeting = dmCheckBox.Checked;
+                    location.StudyCircle = scCheckBox.Checked;
+                    SelectLocation(location);
                     break;
                 case ButtonState.Off:
                     throw new Exception("User was able to click action button in off state.");
             }
+        }
+
+        private void CoreMaps_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            mapControl.Dispose();
+        }
+
+        private void clearMarkersToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            foreach (ActivityLocation l in locations)
+            {
+                l.Marker.Dispose();
+                overlay.Markers.Remove(l.Marker);
+            }
+            locations = new List<ActivityLocation>();
+            selectedLocation = null;
+        }
+
+        private void saveMarkersToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void loadMarkersToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+
         }
     }
 }
